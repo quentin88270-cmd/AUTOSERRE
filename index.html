@@ -607,7 +607,7 @@
     var pass = document.getElementById('wifiPass').value;
     if (!ssid) { toast('⚠️ Saisis un nom de réseau'); return; }
     api({ action:'saveWifi', ssid:ssid, pass:pass })
-      .then(function(){ toast('📶 WiFi enregistré ! Redémarre l'ESP32'); })
+      .then(function(){ toast('📶 WiFi enregistre ! Redemarrer ESP32'); })
       .catch(function(){ toast('⚠️ Erreur sauvegarde WiFi'); });
   }
 
