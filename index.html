@@ -308,16 +308,27 @@
     }, 2200);
   });
 
-  // ══ APPEL API via proxy CORS (allorigins.win) ══════════
+  // ══ APPEL API via proxy CORS ════════════════════════════
   function api(params) {
     var url = API + "?" + Object.keys(params).map(function(k){
       return k + "=" + encodeURIComponent(params[k]);
     }).join("&");
-    // Proxy public qui ajoute les headers CORS manquants
-    var proxy = "https://api.allorigins.win/get?url=" + encodeURIComponent(url);
-    return fetch(proxy)
-      .then(function(r){ return r.json(); })
-      .then(function(j){ return j.contents || ""; });
+
+    // Essaie corsproxy.io en premier, fallback sur allorigins
+    var proxy1 = "https://corsproxy.io/?" + encodeURIComponent(url);
+    var proxy2 = "https://api.allorigins.win/get?url=" + encodeURIComponent(url);
+
+    return fetch(proxy1)
+      .then(function(r) {
+        if (!r.ok) throw new Error('proxy1 fail');
+        return r.text();
+      })
+      .catch(function() {
+        // Fallback allorigins
+        return fetch(proxy2)
+          .then(function(r){ return r.json(); })
+          .then(function(j){ return j.contents || ""; });
+      });
   }
 
   // ══ CHARGER L'ÉTAT DEPUIS SHEETS ═══════════════════════
