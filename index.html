@@ -309,14 +309,157 @@
     }, 2200);
   });
 
-  // ══ APPEL API via proxy CORS (allorigins) ═══════════════
+  // ══ APPEL API ════════════════════════════════════════════
+  // Lectures : Google Sheets CSV public (zéro CORS)
+  // Écritures : fetch no-cors vers Apps Script
+  var SHEET_ID  = "1a5Clnx2L3eHbLy-uh5uJJh2o7uCrY90eB_6brRpupig";
+  var SHEET_GID = "567307201";  // onglet AUTO_SERRE
+
   function api(params) {
     var url = API + "?" + Object.keys(params).map(function(k){
       return k + "=" + encodeURIComponent(params[k]);
     }).join("&");
-    return fetch("https://api.allorigins.win/get?url=" + encodeURIComponent(url))
-      .then(function(r){ return r.json(); })
-      .then(function(j){ return j.contents || ""; });
+
+    // Écritures → no-cors (pas besoin de lire la réponse)
+    if (params.action) {
+      return fetch(url, { mode: 'no-cors', redirect: 'follow' })
+        .then(function() { return "OK"; })
+        .catch(function() { return "OK"; });
+    }
+
+    // Lectures → Google Sheets CSV public
+    return lireSheetCSV().then(function(rows) {
+      if (params.read === 'settings') {
+        // Config ligne 2 du sheet = index 1 du CSV
+        // Colonnes : A=0 B=1 C=2 D=3 E=4 F=5 G=6 H=7 I=8 J=9 K=10 L=11 M=12
+        var r = rows[1] || [];
+        var mode = r[8]||"0", tMin=r[9]||"22", tMax=r[10]||"28", hMin=r[11]||"60", hMax=r[12]||"70";
+        // Nettoyer les valeurs
+        mode = mode.toString().trim() || "0";
+        tMin = parseFloat(tMin) || 22;
+        tMax = parseFloat(tMax) || 28;
+        hMin = parseFloat(hMin) || 60;
+        hMax = parseFloat(hMax) || 70;
+        return mode+"|"+tMin+"|"+tMax+"|"+hMin+"|"+hMax;
+      }
+      if (params.read === 'live') {
+        // Cherche la dernière ligne avec date ET temp ET hum valides
+        for (var i = rows.length-1; i >= 1; i--) {
+          var t = rows[i][2], h = rows[i][3], d = rows[i][0];
+          if (d && t && h && d.match(/\d/) &&
+              !isNaN(parseFloat(t.replace(",","."))) &&
+              !isNaN(parseFloat(h.replace(",",".")))) {
+            return parseFloat(t.replace(",",".")).toFixed(1).replace(".",",")
+                   + "|" + Math.round(parseFloat(h.replace(",","."))).toString();
+          }
+        }
+        return "--|--";
+      }
+      if (params.read === 'chart') {
+        var out = [["Heure","Température","Humidité"]];
+        // Collecter toutes les lignes de données valides
+        var lignes = [];
+        for (var j = 1; j < rows.length; j++) {
+          var t2=rows[j][2], h2=rows[j][3], d2=rows[j][0];
+          if (d2 && t2 && h2 && d2.match(/\d/) &&
+              !isNaN(parseFloat(t2.replace(",","."))) &&
+              !isNaN(parseFloat(h2.replace(",",".")))) {
+            lignes.push(rows[j]);
+          }
+        }
+        // Prendre les 50 derniers
+        var debut = Math.max(0, lignes.length-50);
+        for (var k = debut; k < lignes.length; k++) {
+          var lbl = lignes[k][1] ? lignes[k][1].substring(0,5) : "?";
+          out.push([lbl,
+            parseFloat(lignes[k][2].replace(",",".")),
+            parseFloat(lignes[k][3].replace(",","."))
+          ]);
+        }
+        return JSON.stringify(out);
+      }
+      return "";
+    });
+  }
+
+  // Lit le Sheets complet en CSV public (le sheet doit être partagé en lecture)
+  var csvCache = null, csvCacheTime = 0;
+  function lireSheetCSV() {
+    var now = Date.now();
+    if (csvCache && (now - csvCacheTime) < 14000) return Promise.resolve(csvCache);
+    var url = "https://docs.google.com/spreadsheets/d/" + SHEET_ID
+            + "/export?format=csv&gid=" + SHEET_GID;
+    return fetch(url)
+      .then(function(r){ return r.text(); })
+      .then(function(csv){
+        // Parser le CSV correctement (guillemets, virgules dans valeurs)
+        var rows = csv.split("\n").map(function(l){
+          var cells = [], cur = "", inQ = false;
+          for (var i = 0; i < l.length; i++) {
+            var c = l[i];
+            if (c === '"') { inQ = !inQ; }
+            else if (c === ',' && !inQ) { cells.push(cur.trim()); cur = ""; }
+            else { cur += c; }
+          }
+          cells.push(cur.trim());
+          return cells;
+        });
+        csvCache = rows; csvCacheTime = Date.now();
+        return rows;
+      })
+      .catch(function(){ return []; });
+  }
+
+  function apiRead(type) {
+    if (type === 'settings') {
+      // Lire I2:M2 via Sheets API publique
+      var url = "https://sheets.googleapis.com/v4/spreadsheets/" + SHEET_ID
+              + "/values/AUTO_SERRE!I2:M2?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY";
+      return fetch(url)
+        .then(function(r){ return r.json(); })
+        .then(function(j){
+          if (!j.values || !j.values[0]) return "0|22|28|60|70";
+          var v = j.values[0];
+          return (v[0]||"0") + "|" + (v[1]||"22") + "|" + (v[2]||"28") + "|" + (v[3]||"60") + "|" + (v[4]||"70");
+        }).catch(function(){ return "0|22|28|60|70"; });
+    }
+    if (type === 'live') {
+      // Lire les 5 dernières lignes via Sheets API
+      var url2 = "https://sheets.googleapis.com/v4/spreadsheets/" + SHEET_ID
+               + "/values/AUTO_SERRE!A:E?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY";
+      return fetch(url2)
+        .then(function(r){ return r.json(); })
+        .then(function(j){
+          if (!j.values || j.values.length < 2) return "--|--";
+          var rows = j.values;
+          for (var i = rows.length-1; i >= 1; i--) {
+            if (rows[i][2] && rows[i][3] && !isNaN(parseFloat(rows[i][2]))) {
+              return rows[i][2].replace(".",",") + "|" + rows[i][3].replace(".",",");
+            }
+          }
+          return "--|--";
+        }).catch(function(){ return "--|--"; });
+    }
+    if (type === 'chart') {
+      var url3 = "https://sheets.googleapis.com/v4/spreadsheets/" + SHEET_ID
+               + "/values/AUTO_SERRE!A:D?key=AIzaSyD-9tSrke72PouQMnMX-a7eZSW0jkFMBWY";
+      return fetch(url3)
+        .then(function(r){ return r.json(); })
+        .then(function(j){
+          if (!j.values || j.values.length < 2) return JSON.stringify([["Heure","Température","Humidité"]]);
+          var rows = j.values;
+          var out = [["Heure","Température","Humidité"]];
+          var start = Math.max(1, rows.length-50);
+          for (var i = start; i < rows.length; i++) {
+            if (rows[i][2] && rows[i][3] && !isNaN(parseFloat(rows[i][2]))) {
+              var label = rows[i][1] ? rows[i][1].toString().substring(0,5) : "?";
+              out.push([label, parseFloat(rows[i][2].replace(",",".")), parseFloat(rows[i][3].replace(",","."))]);
+            }
+          }
+          return JSON.stringify(out);
+        }).catch(function(){ return JSON.stringify([["Heure","Température","Humidité"]]); });
+    }
+    return Promise.resolve("");
   }
 
   // ══ CHARGER L'ÉTAT DEPUIS SHEETS ═══════════════════════
