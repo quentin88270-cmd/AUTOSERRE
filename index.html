@@ -304,7 +304,8 @@
       document.getElementById('splash').classList.add('out');
       chargerEtat();
       chargerGraphique();
-      setInterval(chargerEtat, 30000); // Rafraîchit toutes les 30s
+      setInterval(chargerEtat, 15000);      // Rafraîchit live toutes les 15s
+      setInterval(chargerGraphique, 60000); // Rafraîchit graphique toutes les 60s
     }, 2200);
   });
 
