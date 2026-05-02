@@ -308,39 +308,16 @@
     }, 2200);
   });
 
-  // ══ APPEL API via JSONP (contourne CORS avec Apps Script) ══
+  // ══ APPEL API via proxy CORS (allorigins.win) ══════════
   function api(params) {
-    return new Promise(function(resolve, reject) {
-      var cbName = 'cb_' + Math.random().toString(36).slice(2);
-      var timeout = setTimeout(function() {
-        delete window[cbName];
-        if (document.getElementById(cbName)) document.getElementById(cbName).remove();
-        reject(new Error('Timeout'));
-      }, 10000);
-
-      window[cbName] = function(data) {
-        clearTimeout(timeout);
-        delete window[cbName];
-        if (document.getElementById(cbName)) document.getElementById(cbName).remove();
-        resolve(typeof data === 'string' ? data : JSON.stringify(data));
-      };
-
-      params['callback'] = cbName;
-      var url = API + "?" + Object.keys(params).map(function(k){
-        return k + "=" + encodeURIComponent(params[k]);
-      }).join("&");
-
-      var s = document.createElement('script');
-      s.id = cbName;
-      s.src = url;
-      s.onerror = function() {
-        clearTimeout(timeout);
-        delete window[cbName];
-        s.remove();
-        reject(new Error('Script error'));
-      };
-      document.head.appendChild(s);
-    });
+    var url = API + "?" + Object.keys(params).map(function(k){
+      return k + "=" + encodeURIComponent(params[k]);
+    }).join("&");
+    // Proxy public qui ajoute les headers CORS manquants
+    var proxy = "https://api.allorigins.win/get?url=" + encodeURIComponent(url);
+    return fetch(proxy)
+      .then(function(r){ return r.json(); })
+      .then(function(j){ return j.contents || ""; });
   }
 
   // ══ CHARGER L'ÉTAT DEPUIS SHEETS ═══════════════════════
