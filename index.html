@@ -374,19 +374,31 @@
   // ══ MODE ═══════════════════════════════════════════════
   function setMode(mode) {
     appliquerMode(mode);
-    api({ action:'setMode', mode: mode }).then(function(res){
-      toast('✅ Mode ' + (mode===0?'CROISSANCE':'FLORAISON') + ' activé !');
-    });
+    // Sauvegarde immédiate mode + seuils par défaut dans Sheets
+    var s = SEUILS[mode];
+    api({ action:'saveSettings', mode:mode, tMin:s.tMin, tMax:s.tMax, hMin:s.hMin, hMax:s.hMax })
+      .then(function(){ toast('✅ Mode ' + (mode===0?'CROISSANCE':'FLORAISON') + ' sauvegardé !'); })
+      .catch(function(){ toast('⚠️ Erreur de sauvegarde'); });
   }
 
   function appliquerMode(mode) {
     currentMode = mode;
     var s = SEUILS[mode];
+    // Met à jour les variables globales
+    tMin = s.tMin; tMax = s.tMax; hMin = s.hMin; hMax = s.hMax;
+    // Boutons
     document.getElementById('btnC').className = 'mode-btn' + (mode===0?' on-c':'');
     document.getElementById('btnF').className = 'mode-btn' + (mode===1?' on-f':'');
+    // Info texte
     document.getElementById('modeInfo').textContent = (mode===0?'🌿 CROISSANCE':'🌸 FLORAISON') + ' — ' + s.label;
+    // Seuils affichés sous les mesures
     document.getElementById('seuilTemp').textContent = 'Seuil : ' + s.tMin + '–' + s.tMax + '°C';
     document.getElementById('seuilHum').textContent  = 'Seuil : ' + s.hMin + '–' + s.hMax + '%';
+    // Champs de saisie mis à jour automatiquement
+    document.getElementById('tMin').value = s.tMin;
+    document.getElementById('tMax').value = s.tMax;
+    document.getElementById('hMin').value = s.hMin;
+    document.getElementById('hMax').value = s.hMax;
   }
 
   // ══ SEUILS ═════════════════════════════════════════════
@@ -427,7 +439,7 @@
 
   // ══ SHEETS ═════════════════════════════════════════════
   function ouvrirSheets() {
-    api({ read:'sheetsUrl' }).then(function(url){ if(url && url.startsWith('http')) window.open(url,'_blank'); });
+    window.open('https://docs.google.com/spreadsheets/d/1a5Clnx2L3eHbLy-uh5uJJh2o7uCrY90eB_6brRpupig/edit', '_blank');
   }
 
   // ══ NOUVELLE CULTURE ═══════════════════════════════════
