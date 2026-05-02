@@ -308,10 +308,39 @@
     }, 2200);
   });
 
-  // ══ APPEL API (fetch CORS) ══════════════════════════════
+  // ══ APPEL API via JSONP (contourne CORS avec Apps Script) ══
   function api(params) {
-    var url = API + "?" + Object.keys(params).map(function(k){ return k+"="+encodeURIComponent(params[k]); }).join("&");
-    return fetch(url, { redirect: 'follow' }).then(function(r){ return r.text(); });
+    return new Promise(function(resolve, reject) {
+      var cbName = 'cb_' + Math.random().toString(36).slice(2);
+      var timeout = setTimeout(function() {
+        delete window[cbName];
+        if (document.getElementById(cbName)) document.getElementById(cbName).remove();
+        reject(new Error('Timeout'));
+      }, 10000);
+
+      window[cbName] = function(data) {
+        clearTimeout(timeout);
+        delete window[cbName];
+        if (document.getElementById(cbName)) document.getElementById(cbName).remove();
+        resolve(typeof data === 'string' ? data : JSON.stringify(data));
+      };
+
+      params['callback'] = cbName;
+      var url = API + "?" + Object.keys(params).map(function(k){
+        return k + "=" + encodeURIComponent(params[k]);
+      }).join("&");
+
+      var s = document.createElement('script');
+      s.id = cbName;
+      s.src = url;
+      s.onerror = function() {
+        clearTimeout(timeout);
+        delete window[cbName];
+        s.remove();
+        reject(new Error('Script error'));
+      };
+      document.head.appendChild(s);
+    });
   }
 
   // ══ CHARGER L'ÉTAT DEPUIS SHEETS ═══════════════════════
@@ -354,7 +383,8 @@
   function chargerGraphique() {
     api({ read: 'chart' }).then(function(rep) {
       try {
-        var data = JSON.parse(rep);
+        // JSONP retourne déjà un objet JS parsé (pas besoin de JSON.parse si c'est un objet)
+        var data = (typeof rep === 'string') ? JSON.parse(rep) : rep;
         if (!data || data.length <= 1) { document.getElementById('chart_div').innerHTML = '<div class="chart-empty">📭 Pas encore de données</div>'; return; }
         var table = google.visualization.arrayToDataTable(data);
         var chart = new google.visualization.LineChart(document.getElementById('chart_div'));
