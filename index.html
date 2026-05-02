@@ -275,6 +275,25 @@
     <div id="chart_div"><div class="chart-empty">⏳ Chargement…</div></div>
   </div>
 
+  <!-- WIFI CONFIG -->
+  <div class="card" style="border:1.5px solid #c8e6c9;">
+    <div class="card-title">📶 Configuration WiFi</div>
+    <div class="seuils-grid">
+      <div class="s-field" style="grid-column:1/-1">
+        <label>Nom du réseau (SSID)</label>
+        <input type="text" id="wifiSSID" placeholder="NomDuWifi" autocomplete="off" autocorrect="off" spellcheck="false">
+      </div>
+      <div class="s-field" style="grid-column:1/-1">
+        <label>Mot de passe</label>
+        <input type="password" id="wifiPass" placeholder="MotDePasse" autocomplete="off">
+      </div>
+    </div>
+    <button class="btn btn-vert" onclick="sauverWifi()">📶 Enregistrer le WiFi</button>
+    <p style="font-size:.68rem;color:var(--muted);margin-top:8px;text-align:center">
+      L'ESP32 se connectera à ce réseau au prochain démarrage
+    </p>
+  </div>
+
   <!-- DONNÉES -->
   <div class="card">
     <div class="card-title">📊 Données & Gestion</div>
@@ -304,6 +323,7 @@
       document.getElementById('splash').classList.add('out');
       chargerEtat();
       chargerGraphique();
+      chargerWifi();
       setInterval(chargerEtat, 15000);      // Rafraîchit live toutes les 15s
       setInterval(chargerGraphique, 60000); // Rafraîchit graphique toutes les 60s
     }, 2200);
@@ -579,6 +599,25 @@
   function setAct(id, stId, on, cls, onTxt, offTxt) {
     document.getElementById(id).className = 'act' + (on?' '+cls:'');
     document.getElementById(stId).textContent = on ? onTxt : offTxt;
+  }
+
+  // ══ WIFI CONFIG ════════════════════════════════════════
+  function sauverWifi() {
+    var ssid = document.getElementById('wifiSSID').value.trim();
+    var pass = document.getElementById('wifiPass').value;
+    if (!ssid) { toast('⚠️ Saisis un nom de réseau'); return; }
+    api({ action:'saveWifi', ssid:ssid, pass:pass })
+      .then(function(){ toast('📶 WiFi enregistré ! Redémarre l'ESP32'); })
+      .catch(function(){ toast('⚠️ Erreur sauvegarde WiFi'); });
+  }
+
+  // Charger le WiFi actuel depuis Sheets au démarrage
+  function chargerWifi() {
+    lireSheetCSV().then(function(rows) {
+      var r = rows[1] || [];
+      if (r[13]) document.getElementById('wifiSSID').value = r[13];
+      // On n'affiche pas le mot de passe pour la sécurité
+    });
   }
 
   // ══ ARROSAGE ═══════════════════════════════════════════
