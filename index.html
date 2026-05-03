@@ -271,7 +271,7 @@
 
   <!-- GRAPHIQUE -->
   <div class="card">
-    <div class="card-title">📈 Historique (50 derniers relevés)</div>
+    <div class="card-title">📈 Historique (7 derniers jours — 1 point/heure)</div>
     <div id="chart_div"><div class="chart-empty">⏳ Chargement…</div></div>
   </div>
 
@@ -321,11 +321,12 @@
   window.addEventListener('load', function() {
     setTimeout(function() {
       document.getElementById('splash').classList.add('out');
-      chargerEtat();
-      chargerGraphique();
-      chargerWifi();
-      setInterval(chargerEtat, 15000);      // Rafraîchit live toutes les 15s
-      setInterval(chargerGraphique, 60000); // Rafraîchit graphique toutes les 60s
+      // Charger les données — le splash disparaît quoi qu'il arrive
+      try { chargerEtat(); } catch(e) {}
+      try { chargerGraphique(); } catch(e) {}
+      try { chargerWifi(); } catch(e) {}
+      setInterval(chargerEtat, 15000);
+      setInterval(chargerGraphique, 60000);
     }, 2200);
   });
 
@@ -605,10 +606,10 @@
   function sauverWifi() {
     var ssid = document.getElementById('wifiSSID').value.trim();
     var pass = document.getElementById('wifiPass').value;
-    if (!ssid) { toast('⚠️ Saisis un nom de réseau'); return; }
+    if (!ssid) { toast("⚠️ Saisis un nom de reseau"); return; }
     api({ action:'saveWifi', ssid:ssid, pass:pass })
-      .then(function(){ toast('📶 WiFi enregistre ! Redemarrer ESP32'); })
-      .catch(function(){ toast('⚠️ Erreur sauvegarde WiFi'); });
+      .then(function(){ toast("📶 WiFi enregistre ! Redemarrer ESP32"); })
+      .catch(function(){ toast("⚠️ Erreur sauvegarde WiFi"); });
   }
 
   // Charger le WiFi actuel depuis Sheets au démarrage
