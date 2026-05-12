@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -6,6 +7,7 @@
   <title>🌿 Ma Serre Connectée</title>
 
   <!-- ══ PWA / iPhone ══ -->
+
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Serre Auto">
@@ -164,10 +166,12 @@
     /* ── SPINNER inline ── */
     .spin-sm { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:6px; }
   </style>
+
 </head>
 <body>
 
 <!-- ══ SPLASH ══ -->
+
 <div id="splash">
   <div class="sp-ring-wrap">
     <div class="sp-ring"></div>
@@ -191,6 +195,7 @@
 </div>
 
 <!-- ══ HEADER ══ -->
+
 <header>
   <svg class="h-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <circle cx="50" cy="50" r="48" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.3)" stroke-width="1.5"/>
@@ -210,6 +215,7 @@
 <div class="wrap">
 
   <!-- MESURES LIVE -->
+
   <div class="live-row">
     <div class="live-box t">
       <div class="live-lbl">Température</div>
@@ -224,6 +230,7 @@
   </div>
 
   <!-- MODE -->
+
   <div class="card">
     <div class="card-title">🌱 Mode de culture</div>
     <div class="mode-grid">
@@ -242,6 +249,7 @@
   </div>
 
   <!-- ACTIONNEURS -->
+
   <div class="card">
     <div class="card-title">⚙️ État des actionneurs</div>
     <div class="act-row">
@@ -252,6 +260,7 @@
   </div>
 
   <!-- SEUILS -->
+
   <div class="card">
     <div class="card-title">🎚️ Seuils personnalisés</div>
     <div class="seuils-grid">
@@ -264,18 +273,21 @@
   </div>
 
   <!-- ARROSAGE -->
+
   <div class="card" style="border:2px solid #29b6f6;">
     <div class="card-title">🚿 Suivi arrosage</div>
     <button class="btn btn-eau" onclick="validerArrosage()">💧 J'AI ARROSÉ</button>
   </div>
 
   <!-- GRAPHIQUE -->
+
   <div class="card">
     <div class="card-title">📈 Historique (7 derniers jours — 1 point/heure)</div>
     <div id="chart_div"><div class="chart-empty">⏳ Chargement…</div></div>
   </div>
 
   <!-- WIFI CONFIG -->
+
   <div class="card" style="border:1.5px solid #c8e6c9;">
     <div class="card-title">📶 Configuration WiFi</div>
     <div class="seuils-grid">
@@ -295,6 +307,7 @@
   </div>
 
   <!-- DONNÉES -->
+
   <div class="card">
     <div class="card-title">📊 Données & Gestion</div>
     <button class="btn btn-bleu" onclick="ouvrirSheets()">📂 Ouvrir Google Sheets</button>
@@ -590,12 +603,33 @@
 
   // ══ ACTIONNEURS ════════════════════════════════════════
   function majActionneurs(t, h) {
-    var vent  = t > tMax || h > hMax;
-    var chauf = !vent && t < tMin;
-    var brumi = !vent && h < hMin;
-    setAct('actV','stV', vent,  'on-v', 'ACTIF','OFF');
-    setAct('actC','stC', chauf, 'on-c2','ACTIF','OFF');
-    setAct('actB','stB', brumi, 'on-b', 'ACTIF','OFF');
+    var tropChaud  = t > tMax;
+    var tropFroid  = t < tMin;
+    var tropHumide = h > hMax;
+    var tropSec    = h < hMin;
+
+    // Ventilation
+    var vent = false;
+    if (tropFroid) {
+      vent = false;
+    } else if (tropChaud || tropHumide) {
+      vent = true;
+    }
+
+    // Chauffage
+    var chauf = tropFroid;
+
+    // Brumisateur
+    var brumi = false;
+    if (tropSec) {
+      brumi = true;
+    } else if (tropChaud && !tropHumide) {
+      brumi = true; // Chaleur seule → brumi ON pour maintenir humidité
+    }
+
+    setAct('actV','stV', vent,  'on-v',  'ACTIF','OFF');
+    setAct('actC','stC', chauf, 'on-c2', 'ACTIF','OFF');
+    setAct('actB','stB', brumi, 'on-b',  'ACTIF','OFF');
   }
   function setAct(id, stId, on, cls, onTxt, offTxt) {
     document.getElementById(id).className = 'act' + (on?' '+cls:'');
@@ -645,5 +679,6 @@
     setTimeout(function(){ el.classList.remove('show'); }, 3000);
   }
 </script>
+
 </body>
 </html>
