@@ -655,12 +655,12 @@
 
   // ══ RESTART ESP32 ══════════════════════════════════════
   function redemarrerESP() {
-    if (confirm("Redémarrer l'ESP32 ?
-Il reprendra dans quelques secondes.")) {
-      api({ action:'restart' })
-        .then(function(){ toast("🔄 Redémarrage demandé — actif dans ~15s"); })
-        .catch(function(){ toast("⚠️ Erreur envoi commande"); });
+    if (confirm("Redemarrer ESP32 ? Il reprendra dans quelques secondes.")) {
+      api({ action:"restart" })
+        .then(function(){ toast("🔄 Redemarrage demande - actif dans 15s"); })
+        .catch(function(){ toast("Erreur envoi commande"); });
     }
+  }
   }
 
   // ══ NOUVELLE CULTURE ═══════════════════════════════════
