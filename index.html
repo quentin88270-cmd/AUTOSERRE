@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -7,7 +6,6 @@
   <title>🌿 Ma Serre Connectée</title>
 
   <!-- ══ PWA / iPhone ══ -->
-
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Serre Auto">
@@ -166,12 +164,10 @@
     /* ── SPINNER inline ── */
     .spin-sm { display:inline-block; width:14px; height:14px; border:2px solid rgba(255,255,255,.3); border-top-color:#fff; border-radius:50%; animation:spin .7s linear infinite; vertical-align:middle; margin-right:6px; }
   </style>
-
 </head>
 <body>
 
 <!-- ══ SPLASH ══ -->
-
 <div id="splash">
   <div class="sp-ring-wrap">
     <div class="sp-ring"></div>
@@ -195,7 +191,6 @@
 </div>
 
 <!-- ══ HEADER ══ -->
-
 <header>
   <svg class="h-logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
     <circle cx="50" cy="50" r="48" fill="rgba(255,255,255,.12)" stroke="rgba(255,255,255,.3)" stroke-width="1.5"/>
@@ -215,7 +210,6 @@
 <div class="wrap">
 
   <!-- MESURES LIVE -->
-
   <div class="live-row">
     <div class="live-box t">
       <div class="live-lbl">Température</div>
@@ -230,7 +224,6 @@
   </div>
 
   <!-- MODE -->
-
   <div class="card">
     <div class="card-title">🌱 Mode de culture</div>
     <div class="mode-grid">
@@ -249,7 +242,6 @@
   </div>
 
   <!-- ACTIONNEURS -->
-
   <div class="card">
     <div class="card-title">⚙️ État des actionneurs</div>
     <div class="act-row">
@@ -260,7 +252,6 @@
   </div>
 
   <!-- SEUILS -->
-
   <div class="card">
     <div class="card-title">🎚️ Seuils personnalisés</div>
     <div class="seuils-grid">
@@ -273,21 +264,18 @@
   </div>
 
   <!-- ARROSAGE -->
-
   <div class="card" style="border:2px solid #29b6f6;">
     <div class="card-title">🚿 Suivi arrosage</div>
     <button class="btn btn-eau" onclick="validerArrosage()">💧 J'AI ARROSÉ</button>
   </div>
 
   <!-- GRAPHIQUE -->
-
   <div class="card">
     <div class="card-title">📈 Historique (7 derniers jours — 1 point/heure)</div>
     <div id="chart_div"><div class="chart-empty">⏳ Chargement…</div></div>
   </div>
 
   <!-- WIFI CONFIG -->
-
   <div class="card" style="border:1.5px solid #c8e6c9;">
     <div class="card-title">📶 Configuration WiFi</div>
     <div class="seuils-grid">
@@ -307,11 +295,11 @@
   </div>
 
   <!-- DONNÉES -->
-
   <div class="card">
     <div class="card-title">📊 Données & Gestion</div>
     <button class="btn btn-bleu" onclick="ouvrirSheets()">📂 Ouvrir Google Sheets</button>
     <button class="btn btn-rouge btn-sm" onclick="nouvelleculture()">🗑️ Nouvelle culture (effacer l'historique)</button>
+    <button class="btn btn-sm" style="background:linear-gradient(135deg,#546e7a,#78909c);margin-top:7px" onclick="redemarrerESP()">🔄 Redémarrer l'ESP32</button>
   </div>
 
 </div>
@@ -665,6 +653,16 @@
     window.open('https://docs.google.com/spreadsheets/d/1a5Clnx2L3eHbLy-uh5uJJh2o7uCrY90eB_6brRpupig/edit', '_blank');
   }
 
+  // ══ RESTART ESP32 ══════════════════════════════════════
+  function redemarrerESP() {
+    if (confirm("Redémarrer l'ESP32 ?
+Il reprendra dans quelques secondes.")) {
+      api({ action:'restart' })
+        .then(function(){ toast("🔄 Redémarrage demandé — actif dans ~15s"); })
+        .catch(function(){ toast("⚠️ Erreur envoi commande"); });
+    }
+  }
+
   // ══ NOUVELLE CULTURE ═══════════════════════════════════
   function nouvelleculture() {
     if (confirm('⚠️ Effacer tout l\'historique ?\nCette action est irréversible.')) {
@@ -679,6 +677,5 @@
     setTimeout(function(){ el.classList.remove('show'); }, 3000);
   }
 </script>
-
 </body>
 </html>
